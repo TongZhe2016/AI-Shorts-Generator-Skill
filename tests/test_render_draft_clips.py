@@ -109,5 +109,16 @@ B
         self.assertEqual(fresh.parse_timecode("00:00:01.000"), 1.0)
 
 
+    def test_load_selection_clips_accepts_utf8_bom(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            selection = Path(tmp) / "selection.json"
+            selection.write_text('{"clips":[{"id":"clip-01","segments":[{"start":"00:00:01.000","end":"00:00:03.000"}]}]}', encoding="utf-8-sig")
+
+            clips = renderer.load_selection_clips(selection)
+
+            self.assertEqual(clips[0].clip_id, "clip-01")
+
+
 if __name__ == "__main__":
     unittest.main()

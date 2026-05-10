@@ -122,7 +122,7 @@ def build_local_srt(cues: Sequence[Cue], segments: Sequence[Segment]) -> str:
 
 
 def load_selection_clips(path: Path) -> list[ClipSelection]:
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
     raw_clips = data.get("clips")
     if not isinstance(raw_clips, list):
         raise ValueError(f"Selection JSON must contain a clips array: {path}")
@@ -350,4 +350,5 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
