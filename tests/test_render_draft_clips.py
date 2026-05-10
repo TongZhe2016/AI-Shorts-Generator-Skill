@@ -77,5 +77,30 @@ B
                 renderer.load_selection_clips(selection)
 
 
+    def test_escape_subtitles_filter_path_handles_windows_drive(self):
+        escaped = renderer.escape_subtitles_filter_path(Path(r"C:\Users\me\?? file.srt"))
+        self.assertIn("\\:", escaped)
+        self.assertIn("?? file.srt", escaped)
+
+    def test_build_metadata_contains_hook_and_paths(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            clip = renderer.ClipSelection(
+                clip_id="clip-01",
+                segments=[renderer.Segment(1.0, 3.0, "hello")],
+                hook_line="hook",
+                suggested_title="title",
+                suggested_caption="caption",
+                raw={"id": "clip-01"},
+            )
+            metadata = renderer.build_metadata(clip, tmp_path / "clip-01.draft.mp4", tmp_path / "clip-01.local.srt")
+
+            self.assertEqual(metadata["id"], "clip-01")
+            self.assertEqual(metadata["hook_line"], "hook")
+            self.assertEqual(metadata["suggested_title"], "title")
+            self.assertTrue(metadata["outputs"]["draft_video"].endswith("clip-01.draft.mp4"))
+
+
 if __name__ == "__main__":
     unittest.main()
