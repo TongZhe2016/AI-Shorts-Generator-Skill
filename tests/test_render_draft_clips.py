@@ -53,5 +53,29 @@ B
         self.assertIn("00:00:02,000 --> 00:00:04,000\nB", local_srt)
 
 
+    def test_load_selection_clips_validates_segments(self):
+        with self.subTest("valid selection"):
+            import tempfile
+            with tempfile.TemporaryDirectory() as tmp:
+                selection = Path(tmp) / "selection.json"
+                selection.write_text('{"clips":[{"id":"clip-01","segments":[{"start":"00:00:01.000","end":"00:00:03.000","text":"hello"}],"hook_line":"hook","suggested_title":"title"}]}', encoding="utf-8")
+
+                clips = renderer.load_selection_clips(selection)
+
+                self.assertEqual(clips[0].clip_id, "clip-01")
+                self.assertEqual(clips[0].segments, [renderer.Segment(1.0, 3.0, "hello")])
+                self.assertEqual(clips[0].hook_line, "hook")
+                self.assertEqual(clips[0].suggested_title, "title")
+
+    def test_load_selection_clips_rejects_empty_segments(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            selection = Path(tmp) / "selection.json"
+            selection.write_text('{"clips":[{"id":"clip-01","segments":[]}]}', encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "clip-01.*segments"):
+                renderer.load_selection_clips(selection)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -57,6 +57,18 @@ class Segment:
         return max(0.0, self.end - self.start)
 
 
+
+
+@dataclass(frozen=True)
+class ClipSelection:
+    clip_id: str
+    segments: list[Segment]
+    hook_line: str = ""
+    suggested_title: str = ""
+    suggested_caption: str = ""
+    raw: dict | None = None
+
+
 @dataclass(frozen=True)
 class Cue:
     start: float
@@ -103,6 +115,45 @@ def build_local_srt(cues: Sequence[Cue], segments: Sequence[Segment]) -> str:
     return "\n".join(lines).strip() + ("\n" if lines else "")
 
 
+
+def load_selection_clips(path: Path) -> list[ClipSelection]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    raw_clips = data.get("clips")
+    if not isinstance(raw_clips, list):
+        raise ValueError(f"Selection JSON must contain a clips array: {path}")
+    clips: list[ClipSelection] = []
+    for position, raw_clip in enumerate(raw_clips, start=1):
+        if not isinstance(raw_clip, dict):
+            raise ValueError(f"Clip #{position} must be an object")
+        clip_id = str(raw_clip.get("id") or f"clip-{position:02d}")
+        raw_segments = raw_clip.get("segments")
+        if not isinstance(raw_segments, list) or not raw_segments:
+            raise ValueError(f"{clip_id} must contain at least one segments entry with start and end")
+        segments: list[Segment] = []
+        for seg_position, raw_segment in enumerate(raw_segments, start=1):
+            if not isinstance(raw_segment, dict):
+                raise ValueError(f"{clip_id} segment #{seg_position} must be an object")
+            start_value = raw_segment.get("start")
+            end_value = raw_segment.get("end")
+            if not start_value or not end_value:
+                raise ValueError(f"{clip_id} segment #{seg_position} must include start and end")
+            segment = Segment(parse_timecode(str(start_value)), parse_timecode(str(end_value)), str(raw_segment.get("text") or ""))
+            if segment.end <= segment.start:
+                raise ValueError(f"{clip_id} segment #{seg_position} end must be after start")
+            segments.append(segment)
+        clips.append(
+            ClipSelection(
+                clip_id=clip_id,
+                segments=segments,
+                hook_line=str(raw_clip.get("hook_line") or ""),
+                suggested_title=str(raw_clip.get("suggested_title") or ""),
+                suggested_caption=str(raw_clip.get("suggested_caption") or ""),
+                raw=raw_clip,
+            )
+        )
+    return clips
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args(argv)
@@ -111,3 +162,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
