@@ -40,6 +40,69 @@ def format_srt_time(seconds: float) -> str:
     return f"{h:02d}:{m:02d}:{s:02d},{ms:03d}"
 
 
+SRT_TIME_RE = re.compile(
+    r"(?P<start>\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s+-->\s+"
+    r"(?P<end>\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})"
+)
+
+
+@dataclass(frozen=True)
+class Segment:
+    start: float
+    end: float
+    text: str = ""
+
+    @property
+    def duration(self) -> float:
+        return max(0.0, self.end - self.start)
+
+
+@dataclass(frozen=True)
+class Cue:
+    start: float
+    end: float
+    text: str
+
+
+def parse_srt(text: str) -> list[Cue]:
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n").strip()
+    if not normalized:
+        return []
+    blocks = re.split(r"\n\s*\n", normalized)
+    cues: list[Cue] = []
+    for block in blocks:
+        lines = [line.rstrip() for line in block.split("\n") if line.strip()]
+        if not lines:
+            continue
+        time_line_index = next((i for i, line in enumerate(lines) if "-->" in line), -1)
+        if time_line_index < 0:
+            continue
+        match = SRT_TIME_RE.search(lines[time_line_index])
+        if not match:
+            continue
+        text_lines = lines[time_line_index + 1 :]
+        cues.append(Cue(parse_timecode(match.group("start")), parse_timecode(match.group("end")), "\n".join(text_lines).strip()))
+    return cues
+
+
+def build_local_srt(cues: Sequence[Cue], segments: Sequence[Segment]) -> str:
+    lines: list[str] = []
+    local_offset = 0.0
+    index = 1
+    for segment in segments:
+        for cue in cues:
+            if cue.end <= segment.start or cue.start >= segment.end:
+                continue
+            local_start = local_offset + max(cue.start, segment.start) - segment.start
+            local_end = local_offset + min(cue.end, segment.end) - segment.start
+            if local_end <= local_start:
+                continue
+            lines.extend([str(index), f"{format_srt_time(local_start)} --> {format_srt_time(local_end)}", cue.text, ""])
+            index += 1
+        local_offset += segment.duration
+    return "\n".join(lines).strip() + ("\n" if lines else "")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.parse_args(argv)
