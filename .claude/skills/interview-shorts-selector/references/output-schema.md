@@ -1,0 +1,105 @@
+# Output Schema
+
+Return a JSON object with `source`, `selection_profile`, and `clips`. Use Chinese for explanatory fields unless the user requests another language.
+
+## Timestamp format
+
+Use `HH:MM:SS.mmm`, for example `00:12:03.000`.
+
+For `.srt` timestamps like `00:12:03,000`, convert the comma to a period.
+
+## Top-level object
+
+```json
+{
+  "source": {
+    "file": "example.srt",
+    "language": "zh",
+    "duration_estimate": "01:23:45",
+    "input_type": "srt"
+  },
+  "selection_profile": {
+    "primary_mode": "knowledge-opinion",
+    "fallback_mode": "personal-story",
+    "target_clip_count": 8,
+    "duration_range_seconds": [30, 120],
+    "multi_segment_allowed": true
+  },
+  "clips": []
+}
+```
+
+## Clip object
+
+Every clip must include exactly these fields:
+
+```json
+{
+  "id": "clip-01",
+  "rank": 1,
+  "score_100": 88,
+  "start": "00:12:03.000",
+  "end": "00:13:28.000",
+  "duration_seconds": 85,
+  "segments": [
+    {
+      "start": "00:12:03.000",
+      "end": "00:13:28.000",
+      "text": "这一段内所有字幕文字的拼接总和"
+    }
+  ],
+  "full_text": "所有 segments 文本拼接总和",
+  "hook_line": "真正让人停住的是这一句……",
+  "core_claim": "这段的核心观点",
+  "why_it_may_perform": "为什么适合短视频传播",
+  "context_integrity_check": {
+    "verdict": "pass",
+    "is_out_of_context": false,
+    "reason": "前后语义完整，没有省略关键限定条件。",
+    "needed_context": "无",
+    "title_risk_note": "标题不能暗示嘉宾攻击某个人。"
+  },
+  "risk": "低",
+  "risk_reason": "观点表达明确，争议较低。",
+  "suggested_title": "中文标题",
+  "suggested_caption": "发布文案"
+}
+```
+
+## Required field semantics
+
+- `id`: Stable ID in `clip-01` format.
+- `rank`: Ranking after scoring and dedupe.
+- `score_100`: Integer from 0 to 100.
+- `start`: First selected segment start.
+- `end`: Last selected segment end.
+- `duration_seconds`: Sum of selected segment durations.
+- `segments`: One or more selected subtitle ranges with full text.
+- `full_text`: Concatenate all segment text in viewing order.
+- `hook_line`: The best opening line or title-card hook, faithful to the transcript.
+- `core_claim`: One-sentence summary of the clip's main point.
+- `why_it_may_perform`: Specific short-video performance rationale.
+- `context_integrity_check`: Object explaining whether the clip is fair and complete.
+- `risk`: One of `低`, `中`, `高`.
+- `risk_reason`: Why that risk label was assigned.
+- `suggested_title`: Chinese title, not misleading.
+- `suggested_caption`: Chinese publishing caption.
+
+## Multi-segment clips
+
+For multi-segment clips:
+
+- Keep `segments` in playback order.
+- Calculate `duration_seconds` from included segment lengths only.
+- Explain in `context_integrity_check.reason` why the combination is fair.
+- Use `needed_context` to state any extra context that must be kept in editing.
+
+## JSON-only mode
+
+If the user asks for JSON only, return only the JSON object. Do not wrap it in markdown fences.
+
+If the user allows explanation, return the JSON first, then a short Chinese summary with:
+
+- Top 3 recommended clips.
+- Any medium/high risk warnings.
+- Any note about missing timestamps or uncertain boundaries.
