@@ -102,5 +102,12 @@ B
             self.assertTrue(metadata["outputs"]["draft_video"].endswith("clip-01.draft.mp4"))
 
 
+    def test_module_loads_without_manual_sys_modules_registration(self):
+        fresh_spec = importlib.util.spec_from_file_location("render_draft_clips_fresh", SCRIPT)
+        fresh = importlib.util.module_from_spec(fresh_spec)
+        fresh_spec.loader.exec_module(fresh)
+        self.assertEqual(fresh.parse_timecode("00:00:01.000"), 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()

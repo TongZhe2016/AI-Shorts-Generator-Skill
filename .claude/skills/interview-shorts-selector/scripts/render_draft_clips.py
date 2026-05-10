@@ -1,8 +1,6 @@
 ﻿#!/usr/bin/env python3
 """Render draft interview-short clips from selection JSON, source video, and SRT subtitles."""
 
-from __future__ import annotations
-
 import argparse
 import json
 import math
@@ -352,3 +350,4 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
