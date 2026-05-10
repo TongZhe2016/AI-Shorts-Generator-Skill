@@ -3,6 +3,15 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# Generated local draft-render outputs
 output/
+drafts/
 *.mp4
+*.mov
+*.mkv
+*.srt.tmp
+
+# OS / cloud-drive metadata
 .DS_Store
+desktop.ini

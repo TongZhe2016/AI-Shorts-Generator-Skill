@@ -117,3 +117,12 @@ Chat response after saving:
 If the user explicitly asks for JSON only, save the JSON file first, then print only the JSON object in chat. Do not wrap it in markdown fences.
 
 If the user explicitly asks for chat-only output, print the JSON in chat and state that no file was written.
+
+
+## Draft rendering compatibility
+
+The optional draft renderer reads `clips[].segments[].start` and `clips[].segments[].end` as the source-video cut boundaries. For multi-segment clips, the renderer cuts each segment, concatenates them in order, and rebases subtitles to the new draft timeline.
+
+`hook_line`, `suggested_title`, and `suggested_caption` are copied into per-clip metadata for future hook-card/title-card workflows.
+
+Burned subtitles currently require a source `.srt`; timestamped `.txt` can be selected but cannot be burned by the renderer without conversion. `.ass` inputs should be converted to SRT before using the bundled draft renderer.
