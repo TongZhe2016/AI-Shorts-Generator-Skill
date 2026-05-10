@@ -1,6 +1,6 @@
 # Output Schema
 
-Return a JSON object with `source`, `selection_profile`, and `clips`. Use Chinese for explanatory fields unless the user requests another language.
+Create a JSON object with `source`, `selection_profile`, and `clips`, then save it to disk. Use Chinese for explanatory fields unless the user requests another language.
 
 ## Timestamp format
 
@@ -94,12 +94,26 @@ For multi-segment clips:
 - Explain in `context_integrity_check.reason` why the combination is fair.
 - Use `needed_context` to state any extra context that must be kept in editing.
 
-## JSON-only mode
+## File output mode
 
-If the user asks for JSON only, return only the JSON object. Do not wrap it in markdown fences.
+Default behavior: save the complete JSON object to a `.json` file and do not paste the full object into chat.
 
-If the user allows explanation, return the JSON first, then a short Chinese summary with:
+Output path rules:
 
-- Top 3 recommended clips.
-- Any medium/high risk warnings.
-- Any note about missing timestamps or uncertain boundaries.
+- If the user provides an output path, use it.
+- Otherwise save next to the source subtitle as `<subtitle_stem>_shorts_selection.json`.
+- If the source directory is not writable, save in the current working directory.
+- Use UTF-8 encoding and preserve Chinese text.
+- Before replying, verify the file exists and the JSON parses successfully.
+
+Chat response after saving:
+
+- Provide the saved file path.
+- Report clip count.
+- Give a short Chinese summary: top 3 recommended clips, medium/high risk warnings, and uncertain-boundary notes.
+
+## JSON-only / chat output exceptions
+
+If the user explicitly asks for JSON only, save the JSON file first, then print only the JSON object in chat. Do not wrap it in markdown fences.
+
+If the user explicitly asks for chat-only output, print the JSON in chat and state that no file was written.
